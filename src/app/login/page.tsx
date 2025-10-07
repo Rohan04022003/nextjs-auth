@@ -2,7 +2,8 @@
 import Link from "next/link";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Axios } from "axios";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 
 
@@ -13,9 +14,32 @@ export default function LoginPage() {
         password: ""
     })
 
-    const onLogin = async () => {
+    const [buttonDisabled, setButtonDisabled] = React.useState(false);
+    const [loading, setLoading] = React.useState(false);
+    const router = useRouter();
 
+    const onLogin = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.post("/api/users/login", user);
+            console.log("Login success", response.data);
+            toast.success("Login successful!");
+            router.push("/profile");
+        } catch (error) {
+            console.error("Error logging in:", error);
+            toast.error("Login failed. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     }
+
+    React.useEffect(() => {
+        if (user.email.length > 0 && user.password.length > 0) {
+            setButtonDisabled(false);
+        } else {
+            setButtonDisabled(true);
+        }
+    }, [user]);
 
     return (
         <div className="flex flex-col gap-4 items-center justify-center min-h-screen">
@@ -35,8 +59,8 @@ export default function LoginPage() {
                     onChange={(e) => setUser({ ...user, password: e.target.value })}
                     className="border p-2 rounded"
                 />
-                <button onClick={onLogin} className="bg-transparent border border-white hover:bg-neutral-800 duration-300 text-white p-2 cursor-pointer rounded">
-                    Login here
+                <button onClick={onLogin} className={`bg-transparent border border-white hover:bg-neutral-800 duration-300 text-white p-2 rounded ${buttonDisabled ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}`} disabled={buttonDisabled}>
+                    {loading ? "Loading..." : "Log In"}
                 </button>
                 <p>
                     Don&apos;t have an account? <Link href="/signup">Sign up</Link>
