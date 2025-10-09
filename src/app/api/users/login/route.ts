@@ -29,13 +29,13 @@ export async function POST(request: NextRequest) {
             { expiresIn: "1h" }
         );
 
-        // ✅ create response object
+        // create response object
         const response = NextResponse.json(
             { message: "Login successful", user },
             { status: 200 }
         );
 
-        // ✅ set cookie on response
+        // set cookie on response
         response.cookies.set("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
