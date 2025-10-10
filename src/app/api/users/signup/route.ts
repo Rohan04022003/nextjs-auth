@@ -1,51 +1,50 @@
-import { connect } from "@/dbConfig/dbConfig"
-import User from "@/models/userModel.js"
-import { NextRequest, NextResponse } from "next/server"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// app/api/users/signup/route.ts
+import { connect } from "@/dbConfig/dbConfig";
+import User from "@/models/userModel";
+import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import { sendEmail } from "@/helpers/mailer";
 
-
-connect()
-
+connect();
 
 export async function POST(request: NextRequest) {
     try {
+        const { username, email, password } = await request.json();
 
-        const reqBody = await request.json()
-        const { username, email, password } = reqBody;
-
-        console.log(reqBody)
-
-        //check if user already exists
-        const user = await User.findOne({ email })
-
-        if (user) {
-            return NextResponse.json({
-                error: "User already exists"
-            }, {
-                status: 400
-            })
+        if (!username || !email || !password) {
+            return NextResponse.json({ error: "All fields are required" }, { status: 400 });
         }
 
-        //hash password
-        const salt = await bcrypt.genSalt(10)
-        const hashedPassword = await bcrypt.hash(password, salt)
-        const newUser = new User({
-            username,
-            email,
-            password: hashedPassword
-        })
+        // Check if user exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return NextResponse.json({ error: "User already exists" }, { status: 400 });
+        }
 
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = new User({ username, email, password: hashedPassword });
         const savedUser = await newUser.save();
 
-        console.log(savedUser);
+        // Send verification email
+        await sendEmail({
+            email,
+            emailType: "VERIFY",
+            userId: savedUser._id,
+        });
 
-        return NextResponse.json({ message: "User created successfully", success: true, savedUser, status: 201 })
-
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return NextResponse.json(
+            {
+                message: "User created successfully",
+                success: true,
+                savedUser: { _id: savedUser._id, username: savedUser.username, email: savedUser.email },
+            },
+            { status: 201 }
+        );
     } catch (error: any) {
-        return NextResponse.json({
-            error: error.message
-        }, { status: 500 })
+        console.error("Signup error:", error);
+        return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
     }
 }
