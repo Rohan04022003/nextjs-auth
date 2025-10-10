@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest } from "next/server";
 import Jwt from "jsonwebtoken";
+import dotenv  from 'dotenv'
+
+dotenv.config();
 
 export const getDataFromToken = (request: NextRequest) => {
 
